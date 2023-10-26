@@ -7,6 +7,7 @@ import random
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 import numpy as np
+from sklearn.metrics import r2_score
 from sklearn.datasets import load_diabetes
 from pathlib import Path
 pd.set_option('display.max_rows', None)
@@ -17,7 +18,7 @@ pd.set_option('display.colheader_justify', 'center')
 
 def get_data(path: str = None, features: list = None, target: str = None):
     if path is None:
-        data_bunch = load_diabetes(as_frame=True, scaled=True)
+        data_bunch = load_diabetes(as_frame=True, scaled=False)
         df = data_bunch.frame
         features = data_bunch.feature_names
         target = data_bunch.target.name
@@ -80,6 +81,14 @@ def get_df_with_all_correlations_of_features_with_target(df, features, target):
     perm_importances = perm_importances.rename('Permutation')
     corr_types['Permutation'] = nonlin
 
+    # %% ==============    Non-linear feature importances with r2    ==================
+    r2 = []
+    for feature in features:
+        r2.append(r2_score(df[target], df[feature]))
+    r2 = pd.Series(r2, index=features)
+    r2 = r2.rename('r2')
+    corr_types['r2'] = nonlin
+
     # %% ==============    Linear feature importances with PCA    ==================
     from sklearn.decomposition import PCA
     pca = PCA(n_components=1)
@@ -108,23 +117,23 @@ def get_df_with_all_correlations_of_features_with_target(df, features, target):
     corr_types['Lin. Reg.'] = lin
 
     # %% ==============    Non-linear feature importances with XGBoost    ==================
-    import xgboost as xgb
-    xgb_model = xgb.XGBRegressor(objective="reg:squarederror", random_state=0)
-    xgb_model.fit(df[features], df[target])
-    xgb_importances = xgb_model.feature_importances_
-    xgb_importances = pd.Series(xgb_importances, index=features)
-    xgb_importances = xgb_importances.rename('XGBoost')
-    corr_types['XGBoost'] = nonlin
+    # import xgboost as xgb
+    # xgb_model = xgb.XGBRegressor(objective="reg:squarederror", random_state=0)
+    # xgb_model.fit(df[features], df[target])
+    # xgb_importances = xgb_model.feature_importances_
+    # xgb_importances = pd.Series(xgb_importances, index=features)
+    # xgb_importances = xgb_importances.rename('XGBoost')
+    # corr_types['XGBoost'] = nonlin
 
     # %% ==============    Combine and save all feature importances    ==================
     df_importances = pd.concat(
-        [RF_importances, perm_importances, xgb_importances, Lasso_importances, linreg_importances, PCA_importances,
+        [RF_importances, perm_importances, r2, Lasso_importances, linreg_importances, PCA_importances,
          correlations], axis=1)
     # Sort dataframe columns by linear, non-linear, and monotonic correlations and add this as a multiindex
     df_importances.columns = pd.MultiIndex.from_tuples([(corr_types[col], col) for col in df_importances.columns])
     df_importances = df_importances.sort_index(axis=1, level=0, ascending=False)
     # Sort dataframe by XGBoost feature importances
-    df_importances = df_importances.sort_values(by=('nonlinear', 'XGBoost'), ascending=False)
+    df_importances = df_importances.sort_values(by=('nonlinear', 'Random Forest'), ascending=False)
 
     return df_importances
 
@@ -163,6 +172,31 @@ if __name__ == '__main__':
         plt.show()
         plt.close()
     print(f'- Correlation plot of each feature & target saved to "{plotdir}".')
+
+
+    # Plot four different correlation types
+    x = np.linspace(-1, 1, 50)
+    functions = {
+                    'linear': lambda x: 1*x,
+                    'nonlinear': lambda x: x**2,
+                    'monotonic': lambda x: x**3,
+                    'negative linear': lambda x: -1*x,
+                 }
+    sns.set_style('darkgrid')
+    for corr_type, func in functions.items():
+        plt.figure()
+        y = func(x) #+ np.random.normal(0, 0.03, len(x))
+        corr_spearman = pd.DataFrame([x, y], index=['x', 'y']).T.corr(method='spearman').loc['x', 'y']
+        corr_pearson = pd.DataFrame([x, y], index=['x', 'y']).T.corr(method='pearson').loc['x', 'y']
+        r2 = r2_score(y, func(x))
+        label = f'Corr. (Spearman) = {corr_spearman:.2f}\nCorr. (Pearson) = {corr_pearson:.2f}\nR2 = {r2:.2f}'
+        sns.scatterplot(x=x, y=y, alpha=0.6, label=label)
+        # plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(corr_type)
+        plt.savefig(f'{output_dir}/{corr_type}.png', dpi=300, bbox_inches='tight')
+
 
     print('Done!')
 
