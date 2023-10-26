@@ -127,7 +127,7 @@ def get_df_with_all_correlations_of_features_with_target(df, features, target):
 
     # %% ==============    Combine and save all feature importances    ==================
     df_importances = pd.concat(
-        [RF_importances, perm_importances, r2, Lasso_importances, linreg_importances, PCA_importances,
+        [RF_importances, perm_importances, Lasso_importances, linreg_importances, PCA_importances,
          correlations], axis=1)
     # Sort dataframe columns by linear, non-linear, and monotonic correlations and add this as a multiindex
     df_importances.columns = pd.MultiIndex.from_tuples([(corr_types[col], col) for col in df_importances.columns])
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     precision = 2
     pd.set_option('display.precision', precision)
     print(df_importances.round(precision))
-    print('Other methods to look into for feature importances: SHAP, permutation importance, partial dependence plots, LIME, ELI5, ...')
+    print('Other methods to look into for feature importances: SHAP, partial dependence plots, LIME, ELI5, ...')
 
     #%% ==============    Save and print results    ==================
     print(f'Saving output...')
