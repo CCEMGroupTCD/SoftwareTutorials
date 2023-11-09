@@ -2,8 +2,10 @@
 
 ## Installation
 Under a conda environment, install tblite and tblite-python through the conda-forge channel.
+
 `conda install -c conda-forge tblite`
 `conda install -c conda-forge tblite-python`
+
 Make sure you also have ASE installed as well as the basic scientific programming packages.
 
 ## Python API and Usage in ASE
