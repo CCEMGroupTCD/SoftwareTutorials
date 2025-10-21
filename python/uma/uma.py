@@ -245,6 +245,7 @@ if __name__ == '__main__':
     n_unpaired = 0      # Number of unpaired electrons of the molecule.
     fmax = 0.05         # Max. converge force in eV/A. fmax=0.05 will give a convergence dE of around 1E-3 eV for a typical TMC.
     steps = 300         # Maximum number of steps for the relaxation. 0 means single-point calculation.
+    task_name = 'omol'  # Task name for the calculation. For molecules use 'omol', for others look into the FAIRChem documentation.
     # Other options:
     logfile = None      # Logfile to save the optimization output. None to suppress output, '-' to print to stdout.
     timing = True       # Whether to print timing information or not.
@@ -262,7 +263,8 @@ if __name__ == '__main__':
                                 frequencies=frequencies,
                                 device=device,
                                 logfile=logfile,
-                                timing=timing
+                                timing=timing,
+                                task_name=task_name
                                 )
 
     # Optional: uncomment to view optimization trajectory in ase gui.
